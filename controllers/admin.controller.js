@@ -30,8 +30,8 @@ export const getUnverifiedPatient = async (req, res) => {
         });
 
 
-        if(data.medicalRecordNumber !== null) {
-            return res.status(404).json({error: "Belum ada pasien yang mengajukan verifikasi data"})
+        if (data.length === 0) {
+            return res.status(404).json({ error: "Belum ada pasien yang mengajukan verifikasi data" });
         }
 
         res.status(200).json(data)
