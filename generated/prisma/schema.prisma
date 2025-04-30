@@ -1,0 +1,148 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  role         Role
+  isVerified   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  pasien       Pasien?
+}
+
+model Pasien {
+  id                  String             @id @default(uuid()) @map("id_pasien")
+  userId              String             @unique
+  gender              Gender
+  ihsNumber           String             @map("ihs_number")
+  medicalRecordNumber String             @map("medical_record_number")
+  tanggalLahir        DateTime           @map("tanggal_lahir")
+  statusPerkawinanId  String             @map("id_status_perkawinan")
+  statusPembiayaanId  String             @map("id_status_pembiayaan")
+  pendidikanId        String             @map("id_pendidikan")
+  agamaId             String             @map("id_agama")
+  updatedAt           DateTime           @updatedAt @map("updated_at")
+  createdAt           DateTime           @default(now()) @map("created_at")
+  alamat              AlamatPasien?
+  dokumen             DokumenPasien[]
+  identifiers         IdentifierPasien[]
+  kontak              KontakPasien[]
+  nama                NamaPasien?
+  agama               Agama              @relation(fields: [agamaId], references: [id])
+  pendidikan          Pendidikan         @relation(fields: [pendidikanId], references: [id])
+  statusPembiayaan    StatusPembiayaan   @relation(fields: [statusPembiayaanId], references: [id])
+  statusPerkawinan    StatusPerkawinan   @relation(fields: [statusPerkawinanId], references: [id])
+  user                User               @relation(fields: [userId], references: [id])
+}
+
+model NamaPasien {
+  id           String @id @default(uuid()) @map("id_nama_pasien")
+  pasienId     String @unique @map("id_pasien")
+  namaDepan    String @map("nama_depan")
+  namaTengah   String @map("nama_tengah")
+  namaBelakang String @map("nama_belakang")
+  namaLengkap  String @map("nama_lengkap")
+  use          Use
+  pasien       Pasien @relation(fields: [pasienId], references: [id])
+}
+
+model KontakPasien {
+  id            String      @id @default(uuid()) @map("id_kontak_pasien")
+  pasienId      String      @map("id_pasien")
+  jenisKontakId String      @map("id_jenis_kontak")
+  nilaiKontak   String      @map("nilai_kontak")
+  use           Use
+  jenisKontak   JenisKontak @relation(fields: [jenisKontakId], references: [id])
+  pasien        Pasien      @relation(fields: [pasienId], references: [id])
+}
+
+model JenisKontak {
+  id           String         @id @default(uuid()) @map("id_jenis_kontak")
+  namaJenis    String         @map("nama_jenis")
+  kontakPasien KontakPasien[]
+}
+
+model AlamatPasien {
+  id            String @id @default(uuid()) @map("id_alamat_pasien")
+  pasienId      String @unique @map("id_pasien")
+  jalan         String @map("jalan")
+  rtRw          String @map("rt_rw")
+  lingkungan    String @map("lingkungan")
+  kelurahanDesa String @map("keluraha_desa")
+  kecamatan     String @map("kecamatan")
+  kabupatenKota String @map("kabupaten_kota")
+  pasien        Pasien @relation(fields: [pasienId], references: [id])
+}
+
+model DokumenPasien {
+  id          String @id @default(uuid()) @map("id_dokumen_pasien")
+  pasienId    String @map("id_pasien")
+  tipeDokumen String @map("tipe_dokumen")
+  fileUrl     String @map("file_url")
+  pasien      Pasien @relation(fields: [pasienId], references: [id])
+}
+
+model IdentifierPasien {
+  id                String          @id @default(uuid()) @map("id_identifier_pasien")
+  pasienId          String          @map("id_pasien")
+  jenisIdentifierId String          @map("id_jenis_identifier")
+  nilaiIdentifier   String          @map("nilai_identifier")
+  use               String
+  jenisIdentifier   JenisIdentifier @relation(fields: [jenisIdentifierId], references: [id])
+  pasien            Pasien          @relation(fields: [pasienId], references: [id])
+}
+
+model JenisIdentifier {
+  id                  String             @id @default(uuid()) @map("id_jenis_identifier")
+  namaJenisIdentifier String             @map("nama_jenis_identifier")
+  identifierPasien    IdentifierPasien[]
+}
+
+model StatusPerkawinan {
+  id                   String   @id @default(uuid()) @map("id_status_perkawinan")
+  namaStatusPerkawinan String   @map("nama_status_perkawinan")
+  pasien               Pasien[]
+}
+
+model StatusPembiayaan {
+  id                   String   @id @default(uuid()) @map("id_status_pembiayaan")
+  namaStatusPembiayaan String   @map("nama_status_pembiayaan")
+  pasien               Pasien[]
+}
+
+model Pendidikan {
+  id             String   @id @default(uuid()) @map("id_pendidikan")
+  namaPendidikan String   @map("nama_pendidikan")
+  pasien         Pasien[]
+}
+
+model Agama {
+  id        String   @id @default(uuid()) @map("id_agama")
+  namaAgama String   @map("nama_agama")
+  pasien    Pasien[]
+}
+
+enum Role {
+  pasien
+  dokter
+  admin
+}
+
+enum Gender {
+  Pria
+  Wanita
+}
+
+enum Use {
+  Official
+  Informal
+}
