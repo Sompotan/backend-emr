@@ -685,3 +685,38 @@ export const updateDokterByAdmin = async (req, res) => {
         })
     }
 }
+
+export const getVerificationStats = async (req, res) => {
+    try {
+        const pending = await prisma.pasien.count({
+            where: {
+                medicalRecordNumber: null
+            }
+        })
+
+        const today = new Date();
+        today.setHours(0,0,0,0);
+
+        const verifiedToday = await prisma.pasien.count({
+            where: {
+                medicalRecordNumber: {
+                    not: null
+                },
+                updatedAt: {
+                    gte: today
+                }
+            }
+        })
+
+        return res.status(200).json({
+            pending,
+            verifiedToday,
+        })
+
+    } catch (error) {
+        console.error("[getVerificationStats]", error )
+        res.status(500).json({
+            error: "Gagal mengambil statistik verifikasi"
+        })
+    }
+}

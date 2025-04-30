@@ -4,7 +4,7 @@ import {
     checkInKunjungan,
     createDoctor, getAllDoctors, getAllKunjunganAdmin,
     getDetailedUnverifiedPatient, getDoctorById, getKunjunganDetailAdmin,
-    getUnverifiedPatient,
+    getUnverifiedPatient, getVerificationStats,
     getVerifiedPatient, getVerifiedPatientById, updateDokterByAdmin,
     verifyPatient
 } from "../controllers/admin.controller.js";
@@ -88,6 +88,13 @@ adminRoutes.put(
     authenticateToken,
     authorizeRole('admin'),
     updateDokterByAdmin
+)
+
+adminRoutes.get(
+    '/verification-statistics',
+    authenticateToken,
+    authorizeRole('admin'),
+    getVerificationStats
 )
 
 export default adminRoutes;
