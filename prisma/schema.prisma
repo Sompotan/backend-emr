@@ -100,22 +100,22 @@ model Agama {
 }
 
 model TenagaMedis {
-  id                  String                   @id @default(uuid()) @map("id_tenaga_medis")
-  gender              String
-  tanggalLahir        DateTime                 @map("tanggal_lahir")
-  nomorHandphone      String                   @map("nomor_handphone")
-  createdAt           DateTime                 @default(now()) @map("created_at")
-  updatedAt           DateTime                 @updatedAt @map("updated_at")
-  userId              String                   @unique
-  fotoProfil          String?                  @map("foto_profil")
-  alamat              AlamatTenagaMedis?
-  identifier          IdentifierTenagaMedis[]
-  kualifikasi         KualifikasiTenagaMedis[]
-  jadwalPraktekHari   Hari[]                   @default([])
-  kunjungan           Kunjungan[]
-  rekamMedis          RekamMedis[]
-  nama                NamaTenagaMedis?
-  user                User                     @relation(fields: [userId], references: [id])
+  id                String                   @id @default(uuid()) @map("id_tenaga_medis")
+  gender            String
+  tanggalLahir      DateTime                 @map("tanggal_lahir")
+  nomorHandphone    String                   @map("nomor_handphone")
+  createdAt         DateTime                 @default(now()) @map("created_at")
+  updatedAt         DateTime                 @updatedAt @map("updated_at")
+  userId            String                   @unique
+  jadwalPraktekHari Hari[]                   @default([])
+  fotoProfil        String?                  @map("foto_profil")
+  alamat            AlamatTenagaMedis?
+  identifier        IdentifierTenagaMedis[]
+  kualifikasi       KualifikasiTenagaMedis[]
+  kunjungan         Kunjungan[]
+  nama              NamaTenagaMedis?
+  rekamMedis        RekamMedis[]
+  user              User                     @relation(fields: [userId], references: [id])
 }
 
 model NamaTenagaMedis {
@@ -192,7 +192,6 @@ model Kunjungan {
   checkInAt         DateTime?       @map("check_in_at")
   pasien            Pasien          @relation(fields: [pasienId], references: [id])
   tenagaMedis       TenagaMedis     @relation(fields: [tenagaMedisId], references: [id])
-
   rekamMedis        RekamMedis[]
 }
 
@@ -205,259 +204,217 @@ model RekamMedis {
   status         StatusRekamMedis
   versi          VersiRekamMedis
   createdAt      DateTime         @default(now()) @map("created_at")
-
-  // Relasi
+  assessmentNote AssessmentNote?
+  objectiveNote  ObjectiveNote?
+  planningNote   PlanningNote?
   kunjungan      Kunjungan        @relation(fields: [kunjunganId], references: [id])
   tenagaMedis    TenagaMedis      @relation(fields: [tenagaMedisId], references: [id])
-
-  // Nanti bisa ditambah relasi ke Subjective, Objective, Assessment, Planning, dsb.
-  subjectiveNote  SubjectiveNote?
-  objectiveNote   ObjectiveNote?
-  assessmentNote  AssessmentNote?
-  planningNote    PlanningNote?
-  resepObat       ResepObat?
+  resepObat      ResepObat?
+  subjectiveNote SubjectiveNote?
 }
 
 model SubjectiveNote {
-  id             String            @id @default(uuid()) @map("id_subjective_note")
-  rekamMedisId   String            @unique @map("id_rekam_medis")
-  rekamMedis     RekamMedis        @relation(fields: [rekamMedisId], references: [id])
-
-  keluhanPasien     KeluhanPasien[]
-  riwayatPenyakit   RiwayatPenyakit[]
-  alergiPasien      AlergiPasien[]
-  obatDikonsumsi    ObatDikonsumsi[]
-
-  createdAt      DateTime         @default(now()) @map("created_at")
+  id              String            @id @default(uuid()) @map("id_subjective_note")
+  rekamMedisId    String            @unique @map("id_rekam_medis")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  alergiPasien    AlergiPasien[]
+  keluhanPasien   KeluhanPasien[]
+  obatDikonsumsi  ObatDikonsumsi[]
+  riwayatPenyakit RiwayatPenyakit[]
+  rekamMedis      RekamMedis        @relation(fields: [rekamMedisId], references: [id])
 }
 
 model KeluhanPasien {
-  id                String         @id @default(uuid()) @map("id_keluhan_pasien")
-  subjectiveNoteId  String         @map("id_subjective_note")
-  kodeKlinisId      String         @map("id_kode_klinis")
-  jenisKeluhan      JenisKeluhan   @map("jenis_keluhan_pasien")
-  deskripsi         String
-
-  subjectiveNote    SubjectiveNote @relation(fields: [subjectiveNoteId], references: [id])
-  kodeKlinis        KodeKlinis     @relation(fields: [kodeKlinisId], references: [id])
+  id               String         @id @default(uuid()) @map("id_keluhan_pasien")
+  subjectiveNoteId String         @map("id_subjective_note")
+  kodeKlinisId     String         @map("id_kode_klinis")
+  jenisKeluhan     JenisKeluhan   @map("jenis_keluhan_pasien")
+  deskripsi        String
+  kodeKlinis       KodeKlinis     @relation(fields: [kodeKlinisId], references: [id])
+  subjectiveNote   SubjectiveNote @relation(fields: [subjectiveNoteId], references: [id])
 }
 
 model RiwayatPenyakit {
-  id                String                       @id @default(uuid()) @map("id_riwayat_penyakit")
-  subjectiveNoteId  String                       @map("id_subjective_note")
-  kodeKlinisId      String                       @map("id_kode_klinis")
-  jenisRiwayat      JenisRiwayatPenyakit         @map("jenis_riwayat_penyakit")
-  deskripsi         String
-
-  subjectiveNote    SubjectiveNote               @relation(fields: [subjectiveNoteId], references: [id])
-  kodeKlinis        KodeKlinis     @relation(fields: [kodeKlinisId], references: [id])
+  id               String               @id @default(uuid()) @map("id_riwayat_penyakit")
+  subjectiveNoteId String               @map("id_subjective_note")
+  kodeKlinisId     String               @map("id_kode_klinis")
+  jenisRiwayat     JenisRiwayatPenyakit @map("jenis_riwayat_penyakit")
+  deskripsi        String
+  kodeKlinis       KodeKlinis           @relation(fields: [kodeKlinisId], references: [id])
+  subjectiveNote   SubjectiveNote       @relation(fields: [subjectiveNoteId], references: [id])
 }
 
 model AlergiPasien {
-  id                String         @id @default(uuid()) @map("id_alergi_pasien")
-  subjectiveNoteId  String         @map("id_subjective_note")
-  kodeKlinisId      String         @map("id_kode_klinis")
-  jenisAlergi       JenisAlergi    @map("jenis_alergi")
-  deskripsi         String
-
-  subjectiveNote    SubjectiveNote @relation(fields: [subjectiveNoteId], references: [id])
-  kodeKlinis        KodeKlinis     @relation(fields: [kodeKlinisId], references: [id])
+  id               String         @id @default(uuid()) @map("id_alergi_pasien")
+  subjectiveNoteId String         @map("id_subjective_note")
+  kodeKlinisId     String         @map("id_kode_klinis")
+  jenisAlergi      JenisAlergi    @map("jenis_alergi")
+  deskripsi        String
+  kodeKlinis       KodeKlinis     @relation(fields: [kodeKlinisId], references: [id])
+  subjectiveNote   SubjectiveNote @relation(fields: [subjectiveNoteId], references: [id])
 }
 
 model ObatDikonsumsi {
-  id                String         @id @default(uuid()) @map("id_obat_dikonsumsi")
-  subjectiveNoteId  String         @map("id_subjective_note")
-  kodeKlinisId      String         @map("id_kode_klinis")
-  namaObat          String         @map("nama_obat")
-  dosis             String
-  frekuensi         String
-  keterangan        String?
-
-  subjectiveNote    SubjectiveNote @relation(fields: [subjectiveNoteId], references: [id])
-  kodeKlinis        KodeKlinis     @relation(fields: [kodeKlinisId], references: [id])
+  id               String         @id @default(uuid()) @map("id_obat_dikonsumsi")
+  subjectiveNoteId String         @map("id_subjective_note")
+  kodeKlinisId     String         @map("id_kode_klinis")
+  namaObat         String         @map("nama_obat")
+  dosis            String
+  frekuensi        String
+  keterangan       String?
+  kodeKlinis       KodeKlinis     @relation(fields: [kodeKlinisId], references: [id])
+  subjectiveNote   SubjectiveNote @relation(fields: [subjectiveNoteId], references: [id])
 }
 
 model ObjectiveNote {
-  id                      String         @id @default(uuid()) @map("id_objective_note")
-  rekamMedisId            String         @unique
-  rekamMedis              RekamMedis     @relation(fields: [rekamMedisId], references: [id])
-
-  pemeriksaanUmum         PemeriksaanUmum?
-  tandaVital              TandaVital?
-  antropometri            Antropometri?
-  statusGeneralis         StatusGeneralis?
-  pemeriksaanPenunjang    String
+  id                   String           @id @default(uuid()) @map("id_objective_note")
+  rekamMedisId         String           @unique
+  pemeriksaanPenunjang String
+  antropometri         Antropometri?
+  rekamMedis           RekamMedis       @relation(fields: [rekamMedisId], references: [id])
+  pemeriksaanUmum      PemeriksaanUmum?
+  statusGeneralis      StatusGeneralis?
+  tandaVital           TandaVital?
 }
 
 model PemeriksaanUmum {
-  id                String         @id @default(uuid()) @map("id_pemeriksaan_umum")
-  objectiveNoteId   String         @unique
-  kodeKlinisId      String         @map("id_kode_klinis")
-
-  keadaanUmum       KeadaanUmum
-  gcsEye            Int?
-  gcsVerbal         Int?
-  gcsMotor          Int?
-  gcsTotal          Int?
-
-  objectiveNote     ObjectiveNote  @relation(fields: [objectiveNoteId], references: [id])
-  kodeKlinis        KodeKlinis     @relation(fields: [kodeKlinisId], references: [id])
+  id              String        @id @default(uuid()) @map("id_pemeriksaan_umum")
+  objectiveNoteId String        @unique
+  kodeKlinisId    String        @map("id_kode_klinis")
+  keadaanUmum     KeadaanUmum
+  gcsEye          Int?
+  gcsVerbal       Int?
+  gcsMotor        Int?
+  gcsTotal        Int?
+  kodeKlinis      KodeKlinis    @relation(fields: [kodeKlinisId], references: [id])
+  objectiveNote   ObjectiveNote @relation(fields: [objectiveNoteId], references: [id])
 }
 
 model TandaVital {
-  id                String         @id @default(uuid()) @map("id_tanda_vital")
-  objectiveNoteId   String         @unique
-
-  tekananDarah      String?
-  nadi              Int?
-  suhu              Float?
-  frekuensiNafas    Int?
-
-  objectiveNote     ObjectiveNote  @relation(fields: [objectiveNoteId], references: [id])
+  id              String        @id @default(uuid()) @map("id_tanda_vital")
+  objectiveNoteId String        @unique
+  tekananDarah    String?
+  nadi            Int?
+  suhu            Float?
+  frekuensiNafas  Int?
+  objectiveNote   ObjectiveNote @relation(fields: [objectiveNoteId], references: [id])
 }
 
 model Antropometri {
-  id                String         @id @default(uuid()) @map("id_antropometri")
-  objectiveNoteId   String         @unique
-
-  beratBadan        Float?
-  tinggiBadan       Float?
-  imt               Float?
-
-  objectiveNote     ObjectiveNote  @relation(fields: [objectiveNoteId], references: [id])
+  id              String        @id @default(uuid()) @map("id_antropometri")
+  objectiveNoteId String        @unique
+  beratBadan      Float?
+  tinggiBadan     Float?
+  imt             Float?
+  objectiveNote   ObjectiveNote @relation(fields: [objectiveNoteId], references: [id])
 }
 
 model StatusGeneralis {
-  id                String         @id @default(uuid()) @map("id_status_generalis")
-  objectiveNoteId   String         @unique
-
-  kepalaLeher       String?
-  thorax            String?
-  abdomen           String?
-  ekstremitas       String?
-  lainnya           String?
-
-  objectiveNote     ObjectiveNote  @relation(fields: [objectiveNoteId], references: [id])
+  id              String        @id @default(uuid()) @map("id_status_generalis")
+  objectiveNoteId String        @unique
+  kepalaLeher     String?
+  thorax          String?
+  abdomen         String?
+  ekstremitas     String?
+  lainnya         String?
+  objectiveNote   ObjectiveNote @relation(fields: [objectiveNoteId], references: [id])
 }
 
 model AssessmentNote {
-  id                String         @id @default(uuid()) @map("id_assessment_note")
-  rekamMedisId      String         @unique
-  rekamMedis        RekamMedis     @relation(fields: [rekamMedisId], references: [id])
-
-  diagnosisPasien   DiagnosisPasien[]
+  id              String            @id @default(uuid()) @map("id_assessment_note")
+  rekamMedisId    String            @unique
+  rekamMedis      RekamMedis        @relation(fields: [rekamMedisId], references: [id])
+  diagnosisPasien DiagnosisPasien[]
 }
 
 model DiagnosisPasien {
-  id                String         @id @default(uuid()) @map("id_diagnosis_pasien")
-  assessmentNoteId  String
-  kodeKlinisId      String         @map("id_kode_klinis")
-
-  jenisDiagnosis    JenisDiagnosis
-  deskripsi         String
-
-  assessmentNote    AssessmentNote @relation(fields: [assessmentNoteId], references: [id])
-  kodeKlinis        KodeKlinis     @relation(fields: [kodeKlinisId], references: [id])
+  id               String         @id @default(uuid()) @map("id_diagnosis_pasien")
+  kodeKlinisId     String         @map("id_kode_klinis")
+  jenisDiagnosis   JenisDiagnosis
+  deskripsi        String
+  assessmentNoteId String
+  assessmentNote   AssessmentNote @relation(fields: [assessmentNoteId], references: [id])
+  kodeKlinis       KodeKlinis     @relation(fields: [kodeKlinisId], references: [id])
 }
 
 model PlanningNote {
-  id                String         @id @default(uuid()) @map("id_planning_note")
-  rekamMedisId      String         @unique
-
-  rencanaKlinis     RencanaKlinis[]
-  rujukan           Rujukan?
-
-  rekamMedis        RekamMedis     @relation(fields: [rekamMedisId], references: [id])
+  id            String          @id @default(uuid()) @map("id_planning_note")
+  rekamMedisId  String          @unique
+  rekamMedis    RekamMedis      @relation(fields: [rekamMedisId], references: [id])
+  rencanaKlinis RencanaKlinis[]
+  rujukan       Rujukan?
 }
 
 model RencanaKlinis {
-  id                String         @id @default(uuid()) @map("id_rencana_klinis")
-  planningNoteId    String
-  kodeKlinisId      String         @map("id_kode_klinis")
-
-  tanggalRencana    DateTime?
-  deskripsi         String
-  jenisRencana      JenisRencana
-
-  planningNote      PlanningNote   @relation(fields: [planningNoteId], references: [id])
-  kodeKlinis        KodeKlinis     @relation(fields: [kodeKlinisId], references: [id])
+  id             String        @id @default(uuid()) @map("id_rencana_klinis")
+  planningNoteId String
+  kodeKlinisId   String        @map("id_kode_klinis")
+  tanggalRencana DateTime?
+  deskripsi      String
+  jenisRencana   JenisRencana
+  jenisLayanan   jenisLayanan?
+  kodeKlinis     KodeKlinis    @relation(fields: [kodeKlinisId], references: [id])
+  planningNote   PlanningNote  @relation(fields: [planningNoteId], references: [id])
 }
 
 model ResepObat {
-  id                String         @id @default(uuid()) @map("id_resep_obat")
-  rekamMedisId      String         @unique
-
-  createdAt         DateTime
-
-  itemObat          ItemObat[]
-
-  rekamMedis        RekamMedis     @relation(fields: [rekamMedisId], references: [id])
+  id           String     @id @default(uuid()) @map("id_resep_obat")
+  rekamMedisId String     @unique
+  createdAt    DateTime
+  itemObat     ItemObat[]
+  rekamMedis   RekamMedis @relation(fields: [rekamMedisId], references: [id])
 }
 
 model ItemObat {
-  id                String         @id @default(uuid()) @map("id_item_obat")
-  resepObatId       String         @map("id_resep_obat")
-  obatId            String         @map("id_obat")
-
-  dosis             String
-  frekuensi         String
-  durasi            String
-  aturan_pakai      String
-  catatan           String
-
-  resepObat         ResepObat      @relation(fields: [resepObatId], references: [id])
-  obat              Obat           @relation(fields: [obatId], references: [id])
+  id           String    @id @default(uuid()) @map("id_item_obat")
+  resepObatId  String    @map("id_resep_obat")
+  obatId       String    @map("id_obat")
+  dosis        String
+  frekuensi    String
+  durasi       String
+  aturan_pakai String
+  catatan      String
+  obat         Obat      @relation(fields: [obatId], references: [id])
+  resepObat    ResepObat @relation(fields: [resepObatId], references: [id])
 }
 
 model Obat {
-  id                String         @id @default(uuid()) @map("id_obat")
-  kodeKlinisId      String         @unique
-
-  namaObat          String         @map("nama_obat")
-  kekuatan          String
-  bentukSediaan     String         @map("bentuk_sediaan")
-
-  kodeKlinis        KodeKlinis     @relation(fields: [kodeKlinisId], references: [id])
-  itemObat          ItemObat[]
+  id            String     @id @default(uuid()) @map("id_obat")
+  kodeKlinisId  String     @unique
+  namaObat      String     @map("nama_obat")
+  kekuatan      String
+  bentukSediaan String     @map("bentuk_sediaan")
+  itemObat      ItemObat[]
+  kodeKlinis    KodeKlinis @relation(fields: [kodeKlinisId], references: [id])
 }
 
 model Rujukan {
-  id                String         @id @default(uuid()) @map("id_rujukan")
-  planningNoteId    String         @unique
-  status            StatusRujukan  @default(DRAFT) @map("status_rujukan")
-
-  butuhRujukan      Boolean        @default(false) @map("butuh_rujukan")
-  tujuanRujukan     String         @map("tujuan_rujukan")
-  catatanRujukan    String         @map("catatan_rujukan")
-
-  jenisRujukan      JenisRujukan?  @map("jenis_rujukan")
-  startRujukan      DateTime?      @map("start_rujukan")
-  endRujukan        DateTime?      @map("end_rujukan")
-
-  planningNote      PlanningNote   @relation(fields: [planningNoteId], references: [id])
-
+  id             String        @id @default(uuid()) @map("id_rujukan")
+  planningNoteId String        @unique
+  status         StatusRujukan @default(DRAFT) @map("status_rujukan")
+  butuhRujukan   Boolean       @default(false) @map("butuh_rujukan")
+  tujuanRujukan  String        @map("tujuan_rujukan")
+  catatanRujukan String        @map("catatan_rujukan")
+  jenisRujukan   JenisRujukan? @map("jenis_rujukan")
+  startRujukan   DateTime?     @map("start_rujukan")
+  endRujukan     DateTime?     @map("end_rujukan")
+  planningNote   PlanningNote  @relation(fields: [planningNoteId], references: [id])
 }
-
 
 model KodeKlinis {
-  id                String         @id @default(uuid()) @map("id_kode_klinis")
-  system            String
-  kode              String
-  Display           String
-
-  pemeriksaanUmum   PemeriksaanUmum[]
-  keluhanPasien     KeluhanPasien[]
-  riwayatPenyakit   RiwayatPenyakit[]
-  alergiPasien      AlergiPasien[]
-  obatDikonsumsi    ObatDikonsumsi[]
-
-  diagnosisPasien   DiagnosisPasien[]
-  rencanaKlinis     RencanaKlinis[]
-
-  obat              Obat[]
-
+  id              String            @id @default(uuid()) @map("id_kode_klinis")
+  system          String
+  kode            String
+  Display         String
+  alergiPasien    AlergiPasien[]
+  diagnosisPasien DiagnosisPasien[]
+  keluhanPasien   KeluhanPasien[]
+  obat            Obat?
+  obatDikonsumsi  ObatDikonsumsi[]
+  pemeriksaanUmum PemeriksaanUmum[]
+  rencanaKlinis   RencanaKlinis[]
+  riwayatPenyakit RiwayatPenyakit[]
 }
-
 
 enum KeadaanUmum {
   Baik
@@ -494,7 +451,6 @@ enum JenisRencana {
   Lainnya
 }
 
-
 enum StatusRekamMedis {
   DRAFT
   FINAL
@@ -509,9 +465,9 @@ enum VersiRekamMedis {
 enum StatusKunjungan {
   Menunggu
   Diproses
-  DalamPemeriksaan
   Selesai
   Batal
+  DalamPemeriksaan
 }
 
 enum StatusRujukan {
@@ -547,7 +503,6 @@ enum Use {
   Informal
 }
 
-
 enum VerifikasiStatus {
   belum
   menunggu
@@ -562,4 +517,12 @@ enum Hari {
   Jumat
   Sabtu
   Minggu
+}
+
+enum jenisLayanan {
+  KONTROL_ULANG
+  PENGOBATAN_JALAN
+  OBSERVASI
+  EDUKASI_PASIEN
+  TINDAKAN_RINGAN
 }
