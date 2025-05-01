@@ -369,7 +369,8 @@ export const getRiwayatKunjungan = async(req, res) => {
             nama_dokter: kunjungan.tenagaMedis.nama?.namaLengkap || "-",
             tanggal_kunjungan: kunjungan.tanggal_kunjungan,
             status: kunjungan.status,
-            checkInAt: kunjungan.checkInAt
+            checkInAt: kunjungan.checkInAt,
+            alasan_kunjungan: kunjungan.alasanKunjungan
         }));
 
         return res.status(200).json(hasil)
