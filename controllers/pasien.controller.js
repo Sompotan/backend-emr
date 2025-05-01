@@ -147,7 +147,7 @@ export const getPasienProfile = async (req, res) => {
             where: {userId},
             include: {
                 user: {
-                    select: {email: true}
+                    select: {email: true, isVerified: true}
                 },
                 alamat: true,
                 identifiers: {
@@ -158,7 +158,7 @@ export const getPasienProfile = async (req, res) => {
                 agama: true,
                 pendidikan: true,
                 statusPerkawinan: true,
-                statusPembiayaan: true
+                statusPembiayaan: true,
             }
         });
 
@@ -169,8 +169,10 @@ export const getPasienProfile = async (req, res) => {
         const response = {
             id: pasien.id,
             email: pasien.user.email,
+            isVerified: pasien.user.isVerified,
             nama_lengkap: pasien.namaLengkap,
             gender: pasien.gender,
+            fotoProfil:pasien.fotoProfil,
             tanggal_lahir: pasien.tanggalLahir,
             nomor_handphone: pasien.nomorHandphone,
             pekerjaan: pasien.pekerjaan,
