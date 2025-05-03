@@ -81,3 +81,31 @@ export const getJenisIdentifiers = async (req, res) => {
         console.error("[ERROR getJenisIdentifiers]", error);
     }
 }
+
+export const getListDokter = async (req, res) => {
+    try {
+        const dokter = await prisma.tenagaMedis.findMany({
+            include: {
+                user: {
+                    select: {
+                        isVerified: true
+                    }
+                },
+                nama: {
+                    select: {
+                        namaLengkap: true
+                    }
+                }
+            }
+        })
+
+        const verifiedDoctors = dokter.filter(d => d.user?.isVerified === "verified");
+
+        return res.status(200).send(verifiedDoctors)
+    } catch (error) {
+        console.error("[ERROR getListDokter]", error);
+        return res.status(500).json({
+            error: "Gagal mengambil data dokter"
+        })
+    }
+}
