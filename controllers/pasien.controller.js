@@ -301,13 +301,14 @@ export const daftarKunjungan = async (req, res) => {
         const existing = await prisma.kunjungan.findFirst({
             where: {
                 pasienId: pasien.id,
-                tenagaMedisId,
-                tanggal_kunjungan: tanggalKunjungan
+                status: {
+                    not: "Selesai"
+                }
             }
         });
 
         if (existing) {
-            return res.status(400).json({ error: "Anda sudah mendaftar kunjungan dengan dokter ini di tanggal tersebut." });
+            return res.status(400).json({ error: "Anda masih memiliki kunjungan yang sedang berjalan. Harap selesaikan terlebih dahulu sebelum membuat kunjungan baru." });
         }
 
         const newKunjungan = await prisma.kunjungan.create({
@@ -395,7 +396,13 @@ export const getJadwalPraktek = async (req, res) => {
             where: { id },
             select: {
                 id: true,
-                jadwalPraktekHari: true
+                jadwalPraktekHari: true,
+                fotoProfil: true,
+                nama: {
+                    select: {
+                        namaLengkap: true
+                    }
+                }
             }
         });
 
@@ -407,6 +414,8 @@ export const getJadwalPraktek = async (req, res) => {
 
         return res.status(200).json({
             dokterId: dokter.id,
+            namaLengkap: dokter.nama.namaLengkap,
+            fotoProfil: dokter.fotoProfil,
             jadwalPraktek: dokter.jadwalPraktekHari
         });
 
