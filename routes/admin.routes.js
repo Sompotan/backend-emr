@@ -3,7 +3,7 @@ import {authenticateToken} from "../middleware/auth.middleware.js";
 import {
     checkInKunjungan,
     createDoctor, createKunjungan, getAllDoctors, getAllKunjunganAdmin,
-    getDetailedUnverifiedPatient, getDoctorById, getKunjunganDetailAdmin,
+    getDetailedUnverifiedPatient, getDoctorById, getKunjunganDetailAdmin, getSummaryAntrian,
     getUnverifiedPatient, getVerificationStats,
     getVerifiedPatient, getVerifiedPatientById, updateDokterByAdmin,
     verifyPatient
@@ -102,6 +102,13 @@ adminRoutes.get(
     authenticateToken,
     authorizeRole('admin'),
     getVerificationStats
+)
+
+adminRoutes.get(
+    "/antrian-stats",
+    authenticateToken,
+    authorizeRole('admin'),
+    getSummaryAntrian
 )
 
 export default adminRoutes;

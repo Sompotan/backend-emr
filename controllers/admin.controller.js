@@ -1,6 +1,9 @@
 import { PrismaClient } from "@prisma/client";
 import {generateMRN} from "../utils/generateMedicalRecordNumber.js";
 import bcrypt from "bcrypt";
+import {format} from "date-fns";
+import {id} from "date-fns/locale"
+
 
 
 const prisma = new PrismaClient();
@@ -462,6 +465,7 @@ export const getAllKunjunganAdmin = async (req, res) => {
 
         const hasil = kunjunganList.map(k => ({
             id: k.id,
+            fotoProfil: k.pasien.fotoProfil,
             nama_pasien: k.pasien.namaLengkap,
             nama_dokter: k.tenagaMedis.nama?.namaLengkap || "-",
             tanggal_kunjungan: k.tanggal_kunjungan,
@@ -764,5 +768,46 @@ export const createKunjungan = async (req, res) => {
     } catch (error) {
         console.error("[ERROR tambahKunjungan]", error)
         res.status(500).json({error: "Gagal menambahkan Kunjungan"})
+    }
+}
+
+export const getSummaryAntrian = async (req,res) => {
+    try {
+        const totalMenunggu = await prisma.kunjungan.count({
+            where : {
+                status: "Diproses"
+            }
+        })
+
+        const selesaiHariIni = await prisma.kunjungan.count({
+            where: {
+                status: "Selesai",
+                tanggal_kunjungan: {
+                    gte: new Date(new Date().setHours(0, 0, 0, 0)),
+                },
+            }
+        })
+
+        const today = format(new Date(), "EEEE", { locale: id });
+
+        const dokterAktif = await prisma.tenagaMedis.count({
+            where: {
+                jadwalPraktekHari: {
+                    has: today,
+                },
+            },
+        });
+
+        return res.status(200).json({
+            totalMenunggu,
+            selesaiHariIni,
+            dokterAktif
+        })
+
+    } catch (error) {
+        console.error("[ERROR getSummaryAntrian]", error);
+        res.status(500).json({
+            error: "Gagal mengambil data antrian"
+        })
     }
 }
