@@ -401,6 +401,7 @@ export const getDoctorById = async (req, res) => {
             nomor_handphone: doctor.nomorHandphone,
             nama: doctor.nama,
             alamat: doctor.alamat,
+            jadwalPraktek: doctor.jadwalPraktekHari,
             identifier: doctor.identifier.map(i => ({
                 jenis_identifier: i.jenisIdentifier?.namaJenisIdentifier,
                 nilai_identifier: i.nilaiIdentifier
@@ -424,8 +425,20 @@ export const getDoctorById = async (req, res) => {
 }
 
 export const getAllKunjunganAdmin = async (req, res) => {
+    const {search, status} = req.query;
     try {
         const kunjunganList = await prisma.kunjungan.findMany({
+            where: {
+                ...(status && {status}),
+                ...(search && {
+                    pasien: {
+                        namaLengkap: {
+                            contains: search,
+                            mode: "insensitive"
+                        }
+                    }
+                })
+            },
             orderBy: {
                 createdAt: "desc"
             },
@@ -718,5 +731,38 @@ export const getVerificationStats = async (req, res) => {
         res.status(500).json({
             error: "Gagal mengambil statistik verifikasi"
         })
+    }
+}
+
+export const createKunjungan = async (req, res) => {
+    const {pasienId, tenagaMedisId, tanggal_kunjungan, alasanKunjungan} = req.body;
+
+    if (!pasienId || !tenagaMedisId || !tanggal_kunjungan || !alasanKunjungan) {
+        return res.status(400).json({error: "Semua field wajib diisi"})
+    }
+
+    try {
+        const pasien = await prisma.pasien.findUnique({where: {id: pasienId}})
+        const dokter = await prisma.tenagaMedis.findUnique({where: {id: tenagaMedisId}})
+
+        if (!pasien || !dokter) {
+            return res.status(404).json({error: "Pasien atau dokter tidak ditemukan"})
+        }
+
+        const kunjungan = await prisma.kunjungan.create({
+            data: {
+                pasienId,
+                tenagaMedisId,
+                tanggal_kunjungan: new Date(tanggal_kunjungan),
+                alasanKunjungan,
+                status: "Diproses"
+            }
+        })
+
+        res.status(200).json(kunjungan)
+
+    } catch (error) {
+        console.error("[ERROR tambahKunjungan]", error)
+        res.status(500).json({error: "Gagal menambahkan Kunjungan"})
     }
 }

@@ -2,7 +2,7 @@ import {Router} from "express";
 import {authenticateToken} from "../middleware/auth.middleware.js";
 import {
     checkInKunjungan,
-    createDoctor, getAllDoctors, getAllKunjunganAdmin,
+    createDoctor, createKunjungan, getAllDoctors, getAllKunjunganAdmin,
     getDetailedUnverifiedPatient, getDoctorById, getKunjunganDetailAdmin,
     getUnverifiedPatient, getVerificationStats,
     getVerifiedPatient, getVerifiedPatientById, updateDokterByAdmin,
@@ -67,6 +67,13 @@ adminRoutes.get(
     authenticateToken,
     authorizeRole('admin'),
     getAllKunjunganAdmin
+)
+
+adminRoutes.post(
+    '/kunjungan',
+    authenticateToken,
+    authorizeRole('admin'),
+    createKunjungan
 )
 
 adminRoutes.get(

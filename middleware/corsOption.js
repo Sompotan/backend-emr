@@ -1,5 +1,5 @@
 const allowedOrigins = [
-    'http://192.168.236.96:3000',
+    'http://192.168.1.5:3000',
     'http://localhost:3000',
     'exp://192.168.1.5:8081',
 ]
