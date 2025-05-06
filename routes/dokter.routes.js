@@ -3,7 +3,7 @@ import {authenticateToken} from "../middleware/auth.middleware.js";
 import {authorizeRole} from "../middleware/authroizeRole.middleware.js";
 import {
     akhiriPemeriksaan,
-    getAntrian,
+    getAntrian, getAntrianById,
     getAssessmentNote,
     getDokterProfile,
     getObjectiveNote,
@@ -168,6 +168,13 @@ dokterRoutes.get(
     authenticateToken,
     authorizeRole('dokter'),
     getRiwayatKunjunganDokter
+)
+
+dokterRoutes.get(
+    '/kunjungan/:id',
+    authenticateToken,
+    authorizeRole('dokter'),
+    getAntrianById
 )
 
 export default dokterRoutes;

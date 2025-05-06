@@ -94,19 +94,17 @@ export const getAntrian = async (req, res) => {
                 checkInAt: "asc"
             },
             include: {
-                pasien: {
-                    select: {
-                        namaLengkap: true,
-                        tanggalLahir: true,
-                        nomorHandphone: true
-                    }
-                }
+                pasien: true
             }
+
         });
 
         const hasil = antrian.map(k => ({
             id: k.id,
+            fotoProfil: k.pasien.fotoProfil,
             nama_pasien: k.pasien.namaLengkap,
+            medicalRecordNumber: k.pasien.medicalRecordNumber,
+            gender: k.pasien.gender,
             tanggal_lahir: k.pasien.tanggalLahir,
             nomor_handphone: k.pasien.nomorHandphone,
             alasan_kunjungan: k.alasanKunjungan,
@@ -115,6 +113,50 @@ export const getAntrian = async (req, res) => {
         }));
 
         return res.status(200).json(hasil);
+    } catch (error) {
+        console.error("[ERROR getAntrianDokter]", error);
+        return res.status(500).json({ error: "Gagal mengambil antrian kunjungan" });
+    }
+};
+
+export const getAntrianById = async (req, res) => {
+    const {id} = req.params;
+    const userId = req.user.userId;
+
+    try {
+        const dokter = await prisma.tenagaMedis.findUnique({
+            where: { userId }
+        });
+
+        if (!dokter) {
+            return res.status(404).json({ error: "Data dokter tidak ditemukan" });
+        }
+
+        const DataAntrian = await prisma.kunjungan.findUnique({
+            where: {
+                id,
+            },
+            include: {
+                pasien: true
+            }
+
+        });
+
+        if (!DataAntrian) {
+            return res.status(404).json({ error: "Kunjungan tidak ditemukan" });
+        }
+
+        const response = {
+            id: DataAntrian.id,
+            fotoProfil: DataAntrian.pasien.fotoProfil,
+            nama_pasien: DataAntrian.pasien.namaLengkap,
+            medicalRecordNumber: DataAntrian.pasien.medicalRecordNumber,
+            tanggal_lahir: DataAntrian.pasien.tanggalLahir,
+            gender: DataAntrian.pasien.gender,
+            alasan_kunjungan: DataAntrian.alasanKunjungan,
+        }
+
+        return res.status(200).json(response);
     } catch (error) {
         console.error("[ERROR getAntrianDokter]", error);
         return res.status(500).json({ error: "Gagal mengambil antrian kunjungan" });
