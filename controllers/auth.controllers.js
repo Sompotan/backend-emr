@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { PrismaClient } from "@prisma/client";
-import {JWT_SECRET, JWT_EXPIRES_IN, NODE_ENV} from "../config/env.js";
+import {JWT_SECRET, JWT_EXPIRES_IN} from "../config/env.js";
 
 
 
@@ -115,7 +115,7 @@ export const login = async (req, res) => {
 }
 
 export const oauthSync = async (req, res) => {
-    const {email, supabaseId, password} = req.body;
+    const {email, supabaseId} = req.body;
 
     if(!email || !supabaseId) {
         return res.status(400).json({error: "Email dan Supabase ID wajib disediakan"});

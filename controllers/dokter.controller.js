@@ -11,7 +11,10 @@ export const getDokterProfile = async (req, res) => {
             where: { userId },
             include: {
                 user: {
-                    select: {email: true}
+                    select: {
+                        email: true,
+                        isVerified: true
+                    }
                 },
                 nama: true,
                 alamat: true,
@@ -34,6 +37,8 @@ export const getDokterProfile = async (req, res) => {
         const response = {
             id: dokter.id,
             email: dokter.user?.email,
+            isVerified: dokter.user?.isVerified,
+            fotoProfil: dokter.fotoProfil,
             nama_lengkap: dokter.nama?.namaLengkap,
             gender: dokter.gender,
             tanggal_lahir: dokter.tanggalLahir,
@@ -1193,4 +1198,57 @@ export const getRekamMedisById = async(req, res) => {
         })
     }
 
+}
+
+export const getRiwayatKunjunganDokter = async(req, res) => {
+    const userId = req.user.userId;
+
+    try {
+
+        const dokter = await prisma.tenagaMedis.findUnique({
+            where: {
+                userId
+            }
+        })
+
+        if (!dokter) {
+            return res.status(404).json({
+                error: "Data dokter tidak ditemukan"
+            })
+        }
+
+        const kunjunganList = await prisma.kunjungan.findMany({
+            where: {
+                tenagaMedisId: dokter.id
+            },
+            orderBy: {
+                createdAt: "asc"
+            },
+            include: {
+                pasien: {
+                    select: {
+                        namaLengkap: true
+                    }
+                }
+            }
+        })
+
+
+        const hasil = kunjunganList.map(kunjungan => ({
+            id: kunjungan.id,
+            nama_pasien: kunjungan.pasien.namaLengkap || "-",
+            tanggal_kunjungan: kunjungan.tanggal_kunjungan,
+            status: kunjungan.status,
+            checkInAt: kunjungan.checkInAt,
+            alasan_kunjungan: kunjungan.alasanKunjungan
+        }));
+
+        return res.status(200).json(hasil)
+
+    } catch (error) {
+        console.error('[ERROR getRiwayatKunjungan]', error);
+        res.status(500).json({
+            error: "Gagal mengambil riwayat kunjungan"
+        })
+    }
 }

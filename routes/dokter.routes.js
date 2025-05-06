@@ -10,7 +10,7 @@ import {
     getPlanningNote,
     getRekamMedis,
     getRekamMedisById,
-    getResepObat,
+    getResepObat, getRiwayatKunjunganDokter,
     getSubjectiveNote,
     mulaiPemeriksaan,
     updateAssessmentNote,
@@ -161,6 +161,13 @@ dokterRoutes.get(
     authenticateToken,
     authorizeRole('dokter'),
     getRekamMedisById
+)
+
+dokterRoutes.get(
+    '/riwayat-kunjungan',
+    authenticateToken,
+    authorizeRole('dokter'),
+    getRiwayatKunjunganDokter
 )
 
 export default dokterRoutes;
