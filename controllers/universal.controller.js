@@ -109,3 +109,37 @@ export const getListDokter = async (req, res) => {
         })
     }
 }
+
+export const getKodeKlinis = async (req, res) => {
+    const { search = "" } = req.query;
+
+    try {
+        const result = await prisma.kodeKlinis.findMany({
+            where: {
+                OR: [
+                    {kode: {contains: search, mode: "insensitive"}},
+                    {Display: {contains: search, mode: "insensitive"}}
+                ]
+            },
+            take: 20,
+            orderBy: {
+                Display: "asc"
+            },
+            select: {
+                id: true,
+                kode: true,
+                Display: true,
+                system: true
+            }
+        });
+
+        return res.status(200).json(result)
+
+
+    } catch (error) {
+        console.error("[ERROR getKodeKlinis]", error);
+        return res.status(500).json({
+            error: "Gagal mengambil data kode klinis"
+        })
+    }
+}

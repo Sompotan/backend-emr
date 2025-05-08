@@ -6,10 +6,9 @@ import {
     getAntrian, getAntrianById,
     getAssessmentNote,
     getDokterProfile,
-    getObjectiveNote,
+    getObjectiveNote, getPasienInfoByRekamMedisId,
     getPlanningNote,
-    getRekamMedis,
-    getRekamMedisById,
+    getRekamMedisById, getRekamMedisByPatientId,
     getResepObat, getRiwayatKunjunganDokter,
     getSubjectiveNote,
     mulaiPemeriksaan,
@@ -150,10 +149,10 @@ dokterRoutes.patch(
 )
 
 dokterRoutes.get(
-    '/rekam-medis',
+    '/pasien/:id/rekam-medis',
     authenticateToken,
     authorizeRole('dokter'),
-    getRekamMedis
+    getRekamMedisByPatientId
 )
 
 dokterRoutes.get(
@@ -175,6 +174,13 @@ dokterRoutes.get(
     authenticateToken,
     authorizeRole('dokter'),
     getAntrianById
+)
+
+dokterRoutes.get(
+    "/rekam-medis/:id/pasien-info",
+    authenticateToken,
+    authorizeRole('dokter'),
+    getPasienInfoByRekamMedisId
 )
 
 export default dokterRoutes;
