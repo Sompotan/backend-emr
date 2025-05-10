@@ -85,6 +85,12 @@ export const getAntrian = async (req, res) => {
         const antrian = await prisma.kunjungan.findMany({
             where: {
                 tenagaMedisId: dokter.id,
+                status: {
+                    not: "Selesai"
+                },
+                checkInAt: {
+                    not: null
+                },
                 tanggal_kunjungan: {
                     gte: today,
                     lt: tomorrow
@@ -155,6 +161,7 @@ export const getAntrianById = async (req, res) => {
             tanggal_lahir: DataAntrian.pasien.tanggalLahir,
             gender: DataAntrian.pasien.gender,
             alasan_kunjungan: DataAntrian.alasanKunjungan,
+            status: DataAntrian.status
         }
 
         return res.status(200).json(response);
@@ -587,7 +594,6 @@ export const updateObjectiveNote = async (req, res) => {
     }
 };
 
-
 export const getObjectiveNote = async(req, res) => {
     const {
         id: rekamMedisId
@@ -799,7 +805,8 @@ export const updatePlanningNote = async(req, res) => {
                 id: rekamMedisId
             },
             include: {
-                planningNote: true
+                planningNote: true,
+                kunjungan: true
             }
         })
 
@@ -815,41 +822,87 @@ export const updatePlanningNote = async(req, res) => {
             })
         }
 
-        let planningNoteId;
+        await prisma.$transaction(async (tx) => {
+            let planningNoteId
 
-        if (!rekamMedis.planningNote) {
-            const created = await prisma.planningNote.create({
-                data: {
-                    rekamMedisId
+            if (!rekamMedis.planningNote) {
+                const created = await tx.planningNote.create({
+                    data: {
+                        rekamMedisId
+                    }
+                });
+                planningNoteId = created.id
+            } else {
+                planningNoteId = rekamMedis.planningNote.id
+                await tx.rencanaKlinis.deleteMany({where : {planningNoteId}})
+            }
+
+            for (const r of rencanaKlinis) {
+                await tx.rencanaKlinis.create({
+                    data: {
+                        planningNoteId,
+                        kodeKlinisId: r.kodeKlinisId,
+                        jenisRencana: r.jenisRencana,
+                        jenisLayanan: r.jenisLayanan,
+                        tanggalRencana: r.tanggalRencana ? new Date(r.tanggalRencana) : undefined,
+                        deskripsi : r.deskripsi
+                    }
+                })
+
+                if (r.jenisRencana === "Tindakan" && r.resepObat?.length > 0) {
+                    await tx.resepObat.upsert({
+                        where: {rekamMedisId},
+                        update: {
+                            itemObat: {
+                                deleteMany : {},
+                                createMany: {
+                                    data: r.resepObat.map(item => ({
+                                        obatId: item.obatId,
+                                        frekuensi: item.frekuensi,
+                                        durasi: item.durasi,
+                                        aturan_pakai: item.aturan_pakai,
+                                        catatan: item.catatan  ?? ""
+                                    }))
+                                }
+                            }
+                        },
+                        create: {
+                            rekamMedisId,
+                            status: "DRAFT",
+                            createdAt: new Date(),
+                            itemObat: {
+                                createMany: {
+                                    data: r.resepObat.map(item => ({
+                                        obatId: item.obatId,
+                                        frekuensi: item.frekuensi,
+                                        durasi: item.durasi,
+                                        aturan_pakai: item.aturan_pakai,
+                                        catatan: item.catatan ?? ""
+                                    }))
+                                }
+                            }
+                        }
+                    })
                 }
-            });
-            planningNoteId = created.id
-        } else {
-            planningNoteId = rekamMedis.planningNote.id
 
-            await prisma.rencanaKlinis.deleteMany({
-                where: {
-                    planningNoteId
+                if (r.jenisRencana === "Monitoring" && r.tanggalRencana) {
+                    await tx.kunjungan.create({
+                        data: {
+                            pasienId: rekamMedis.kunjungan.pasienId,
+                            tenagaMedisId: rekamMedis.tenagaMedisId,
+                            tanggal_kunjungan: new Date(r.tanggalRencana),
+                            alasanKunjungan: r.deskripsi ?? "Rencana Monitoring",
+                            status: "Menunggu"
+                        }
+                    })
                 }
-            })
-        }
 
-        if (rencanaKlinis?.length > 0) {
-            await prisma.rencanaKlinis.createMany({
-                data: rencanaKlinis.map(r => ({
-                    planningNoteId,
-                    kodeKlinisId: r.kodeKlinisId,
-                    jenisRencana: r.jenisRencana,
-                    jenisLayanan: r.jenisLayanan,
-                    tanggalRencana: r.tanggalRencana ? new Date(r.tanggalRencana) : undefined,
-                    deskripsi: r.deskripsi
-                }))
-            })
-        }
+            }
+        })
+
 
         return res.status(200).json({
             message: "Planning Note berhasil disimpan",
-            planningNoteId
         })
 
     } catch (error) {
@@ -880,6 +933,15 @@ export const getPlanningNote = async(req, res) => {
                             }
                         }
                     }
+                },
+                resepObat: {
+                    include: {
+                        itemObat: {
+                            include: {
+                                obat: true
+                            }
+                        }
+                    }
                 }
             }
         })
@@ -893,13 +955,31 @@ export const getPlanningNote = async(req, res) => {
         if (!rekamMedis.planningNote) {
             return res.status(200).json({
                 message: "Planning Note masih kosong",
-                rencanKlinis: []
+                rencanaKlinis: []
             });
         }
 
+        const resepObat = rekamMedis.resepObat?.itemObat.map((item) => ({
+            obatId: item.obatId,
+            frekuensi: item.frekuensi,
+            durasi: item.durasi,
+            aturan_pakai: item.aturan_pakai,
+            catatan: item.catatan ?? "",
+        }));
+
+        // Inject resepObat hanya ke rencana jenis Tindakan
+        const rencanaKlinis = rekamMedis.planningNote.rencanaKlinis.map((r) => ({
+            kodeKlinisId: r.kodeKlinisId,
+            jenisRencana: r.jenisRencana,
+            jenisLayanan: r.jenisLayanan,
+            deskripsi: r.deskripsi,
+            tanggalRencana: r.tanggalRencana,
+            resepObat: r.jenisRencana === "Tindakan" ? resepObat : undefined,
+        }));
+
         return res.status(200).json({
             message: "Berhasil mengambil data planning note",
-            rencanaKlinis: rekamMedis.planningNote.rencanaKlinis
+            rencanaKlinis
         })
 
     } catch (error) {
@@ -1038,59 +1118,99 @@ export const getResepObat = async(req, res) => {
     }
 }
 
-export const akhiriPemeriksaan = async(req, res) => {
-    const {
-        id: kunjunganId
-    } = req.params;
+export const akhiriPemeriksaan = async (req, res) => {
+    const { id: kunjunganId } = req.params;
 
     try {
-
         const kunjungan = await prisma.kunjungan.findUnique({
-            where: {
-                id: kunjunganId
-            },
+            where: { id: kunjunganId },
             include: {
-                rekamMedis: true
-            }
-        })
+                rekamMedis: true,
+                pasien: true,
+                tenagaMedis: true,
+            },
+        });
 
         if (!kunjungan) {
-            return res.status(404).json({
-                error: "Kunjungan tidak ditemukan"
-            })
+            return res.status(404).json({ error: "Kunjungan tidak ditemukan" });
         }
 
-        await prisma.rekamMedis.updateMany({
+        const rekamMedisUtama = await prisma.rekamMedis.findFirst({
             where: {
-                kunjunganId
+                kunjunganId,
+                versi: "UTAMA",
             },
-            data: {
-                status: "FINAL"
-            }
-        })
+        });
 
-        await prisma.kunjungan.update({
-            where: {
-                id: kunjunganId,
-                status: "DalamPemeriksaan"
-            },
-            data: {
-                status: "Selesai",
-                endAt: new Date(),
-            }
-        })
+        if (!rekamMedisUtama) {
+            return res.status(404).json({ error: "Rekam medis utama tidak ditemukan" });
+        }
+
+        const planningNote = await prisma.planningNote.findUnique({
+            where: { rekamMedisId: rekamMedisUtama.id },
+            include: { rencanaKlinis: true },
+        });
+
+        // Filter rencana kontrol ulang / monitoring dengan tanggal
+        const followUpRencana = planningNote?.rencanaKlinis.filter(
+            (r) =>
+                (r.jenisRencana === "Monitoring" || r.jenisRencana === "KontrolUlang") &&
+                r.tanggalRencana
+        );
+
+        const rekamMedisIds = kunjungan.rekamMedis.map((r) => r.id);
+
+        await prisma.$transaction([
+            // Finalisasi semua rekam medis
+            prisma.rekamMedis.updateMany({
+                where: { id: { in: rekamMedisIds } },
+                data: { status: "FINAL" },
+            }),
+
+            // Finalisasi resep obat yang masih DRAFT
+            prisma.resepObat.updateMany({
+                where: {
+                    rekamMedisId: { in: rekamMedisIds },
+                    status: "DRAFT",
+                },
+                data: { status: "FINAL" },
+            }),
+
+            // Update status kunjungan
+            prisma.kunjungan.update({
+                where: {
+                    id: kunjunganId,
+                },
+                data: {
+                    status: "Selesai",
+                    endAt: new Date(),
+                },
+            }),
+
+            // Buat kunjungan baru jika kontrol ulang/monitoring direncanakan
+            ...((followUpRencana ?? []).map((r) =>
+                prisma.kunjungan.create({
+                    data: {
+                        pasienId: kunjungan.pasienId,
+                        tenagaMedisId: kunjungan.tenagaMedisId,
+                        tanggal_kunjungan: new Date(r.tanggalRencana),
+                        alasanKunjungan: r.deskripsi ?? "Kontrol ulang",
+                        status: "Menunggu",
+                    },
+                })
+            )),
+        ]);
 
         return res.status(200).json({
-            message: "Pemeriksaan berhasil diakhiri. Rekam medis sudah tidak bisa diedit lagi"
-        })
-
+            message: "Pemeriksaan berhasil diakhiri. Rekam medis dan resep sudah final.",
+        });
     } catch (error) {
         console.error("[ERROR akhiriPemeriksaan]", error);
         return res.status(500).json({
-            error: "Gagal mengakhiri pemeriksaan"
-        })
+            error: "Gagal mengakhiri pemeriksaan",
+        });
     }
-}
+};
 
 export const getRekamMedisByPatientId = async(req, res) => {
     const { pasienId } = req.params
@@ -1370,3 +1490,34 @@ export const getPasienInfoByRekamMedisId = async (req, res) => {
         return res.status(500).json({ error: "Gagal mengambil info pasien" });
     }
 };
+
+export const getObatList = async (req, res) => {
+    const search = req.query.search?.toLowerCase() || "";
+
+    try {
+        const data = await prisma.obat.findMany({
+            where: {
+                namaObat: {
+                    contains: search,
+                    mode: "insensitive"
+                }
+            },
+            orderBy:{namaObat: "asc"},
+            take: 20
+        })
+
+        const result = data.map((obat) => ({
+            id: obat.id,
+            label: `${obat.namaObat} ${obat.kekuatan ?? ""} ${obat.bentukSediaan?? ""}`.trim()
+        }))
+
+        return res.status(200).json(result)
+
+    } catch (error) {
+        console.error("[ERROR getObatList]", error);
+        return res.status(500).json({
+            error: "Gagal mengambil data obat"
+        })
+    }
+
+}

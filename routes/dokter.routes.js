@@ -5,7 +5,7 @@ import {
     akhiriPemeriksaan,
     getAntrian, getAntrianById,
     getAssessmentNote,
-    getDokterProfile,
+    getDokterProfile, getObatList,
     getObjectiveNote, getPasienInfoByRekamMedisId,
     getPlanningNote,
     getRekamMedisById, getRekamMedisByPatientId,
@@ -182,5 +182,13 @@ dokterRoutes.get(
     authorizeRole('dokter'),
     getPasienInfoByRekamMedisId
 )
+
+dokterRoutes.get(
+    "/obat",
+    authenticateToken,
+    authorizeRole('dokter'),
+    getObatList
+)
+
 
 export default dokterRoutes;
