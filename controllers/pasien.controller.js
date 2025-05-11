@@ -493,6 +493,13 @@ export const getRekamMedis = async(req, res) => {
                         diagnosisPasien: {
                             where: {
                                 jenisDiagnosis: "Utama"
+                            },
+                            include: {
+                                kodeKlinis: {
+                                    select: {
+                                        Display: true
+                                    }
+                                }
                             }
                         }
                     }
@@ -513,7 +520,7 @@ export const getRekamMedis = async(req, res) => {
             tanggal: rm.kunjungan.tanggal_kunjungan,
             dokter: rm.tenagaMedis.nama.namaLengkap,
             versi: rm.versi,
-            diagnosis: rm.assessmentNote?.diagnosisPasien[0]?.deskripsi ?? "-",
+            diagnosis: rm.assessmentNote?.diagnosisPasien[0]?.kodeKlinis?.Display ?? "-",
             kunjunganId: rm.kunjunganId
         }))
 
@@ -581,7 +588,15 @@ export const getRekamMedisById = async(req, res) => {
                 },
                 assessmentNote: {
                     include: {
-                        diagnosisPasien: true
+                        diagnosisPasien: {
+                            include: {
+                                kodeKlinis: {
+                                    select: {
+                                        Display: true
+                                    }
+                                }
+                            }
+                        }
                     }
                 },
                 planningNote: {
@@ -607,26 +622,20 @@ export const getRekamMedisById = async(req, res) => {
             })
         }
 
-        const tambahan = await prisma.rekamMedis.findMany({
-            where: {
-                id: {
-                    not: rekamMedisId
-                },
-                kunjunganId: utama.kunjunganId,
-                tenagaMedisId: utama.tenagaMedisId,
-                status: "FINAL",
-                versi: {
-                    in: ["REVISI", "FOLLOW_UP"]
-                }
-            },
-            orderBy: {
-                tanggal: "asc"
-            }
-        })
 
         return res.status(200).json({
-            utama,
-            tambahan
+            utama: {
+                tekananDarah: utama.objectiveNote?.tandaVital?.tekananDarah ?? "-",
+                detakJantung: utama.objectiveNote?.tandaVital?.nadi.toString() ?? "-",
+                keluhan: utama.subjectiveNote?.keluhanPasien[0]?.deskripsi ?? "-",
+                diagnosis: utama.assessmentNote?.diagnosisPasien.find(d => d.jenisDiagnosis === "Utama")?.deskripsi ?? "-",
+                deskripsiDiagnosis: utama.assessmentNote?.diagnosisPasien.find(d => d.jenisDiagnosis === "Utama").kodeKlinis?.Display ?? "-",
+                resep: utama.resepObat?.itemObat.map(item => ({
+                    nama: item.obat.namaObat,
+                    kekuatan: item.obat.kekuatan ?? "-",
+                    frekuensi: item.frekuensi
+                }))
+            }
         })
 
 
