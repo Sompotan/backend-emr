@@ -21,7 +21,7 @@ model User {
 
 model Pasien {
   id                  String             @id @default(uuid()) @map("id_pasien")
-  userId              String             @unique
+  userId              String?            @unique
   gender              Gender
   ihsNumber           String?            @map("ihs_number")
   medicalRecordNumber String?            @map("medical_record_number")
@@ -43,7 +43,7 @@ model Pasien {
   pendidikan          Pendidikan         @relation(fields: [pendidikanId], references: [id])
   statusPembiayaan    StatusPembiayaan   @relation(fields: [statusPembiayaanId], references: [id])
   statusPerkawinan    StatusPerkawinan   @relation(fields: [statusPerkawinanId], references: [id])
-  user                User               @relation(fields: [userId], references: [id])
+  user                User?              @relation(fields: [userId], references: [id])
 }
 
 model AlamatPasien {
@@ -109,6 +109,7 @@ model TenagaMedis {
   userId            String                   @unique
   jadwalPraktekHari Hari[]                   @default([])
   fotoProfil        String?                  @map("foto_profil")
+  status            StatusTenagaMedis?       @default(NONAKTIF)
   alamat            AlamatTenagaMedis?
   identifier        IdentifierTenagaMedis[]
   kualifikasi       KualifikasiTenagaMedis[]
@@ -529,5 +530,12 @@ enum jenisLayanan {
 
 enum StatusResep {
   DRAFT
+  DIPESAN
+  DISIAPKAN
   FINAL
+}
+
+enum StatusTenagaMedis {
+  AKTIF
+  NONAKTIF
 }

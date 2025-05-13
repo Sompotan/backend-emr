@@ -169,6 +169,7 @@ export const logout = async (req, res) => {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
+        path: '/'
     })
 
 

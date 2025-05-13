@@ -2,15 +2,34 @@ import {Router} from "express";
 import {authenticateToken} from "../middleware/auth.middleware.js";
 import {
     checkInKunjungan,
-    createDoctor, createKunjungan, getAllDoctors, getAllKunjunganAdmin,
-    getDetailedUnverifiedPatient, getDoctorById, getKunjunganDetailAdmin, getSummaryAntrian,
-    getUnverifiedPatient, getVerificationStats,
-    getVerifiedPatient, getVerifiedPatientById, updateDokterByAdmin,
+    createDoctor,
+    createKunjungan,
+    createPatient,
+    getAllDoctors,
+    getAllKunjunganAdmin, getDashboardOverview,
+    getDetailedUnverifiedPatient,
+    getDoctorById,
+    getKunjunganDetailAdmin, getListOrderObat, getRekamMedisDetailByPasien, getResepObatDetail,
+    getRiwayatRekamMedisByPasien, getStatistikDokter,
+    getSummaryAntrian,
+    getUnverifiedPatient,
+    getVerificationStats,
+    getVerifiedPatient,
+    getVerifiedPatientById,
+    updateDokterByAdmin, updateStatusOrderObat,
     verifyPatient
 } from "../controllers/admin.controller.js";
 import {authorizeRole} from "../middleware/authroizeRole.middleware.js";
+import {updateResepObat} from "../controllers/dokter.controller.js";
 
 const adminRoutes = Router();
+
+adminRoutes.get(
+    '/dokter/statistik',
+    authenticateToken,
+    authorizeRole('admin'),
+    getStatistikDokter
+)
 
 adminRoutes.get(
     '/pasien',
@@ -109,6 +128,55 @@ adminRoutes.get(
     authenticateToken,
     authorizeRole('admin'),
     getSummaryAntrian
+)
+
+adminRoutes.post(
+    '/pasien',
+    authenticateToken,
+    authorizeRole('admin'),
+    createPatient
+)
+
+adminRoutes.get(
+    '/pasien/:id/rekam-medis',
+    authenticateToken,
+    authorizeRole('admin'),
+    getRiwayatRekamMedisByPasien
+)
+
+adminRoutes.get(
+    '/rekam-medis/:rekamMedisId',
+    authenticateToken,
+    authorizeRole('admin'),
+    getRekamMedisDetailByPasien
+)
+
+adminRoutes.get(
+    '/resep-obat',
+    authenticateToken,
+    authorizeRole('admin'),
+    getListOrderObat
+)
+
+adminRoutes.patch(
+    '/resep-obat/:id/status',
+    authenticateToken,
+    authorizeRole('admin'),
+    updateStatusOrderObat
+)
+
+adminRoutes.get(
+    '/resep-obat/:id',
+    authenticateToken,
+    authorizeRole('admin'),
+    getResepObatDetail
+)
+
+adminRoutes.get(
+    '/dashboard',
+    authenticateToken,
+    authorizeRole('admin'),
+    getDashboardOverview
 )
 
 export default adminRoutes;

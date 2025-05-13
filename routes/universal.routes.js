@@ -1,6 +1,6 @@
 import {Router} from "express";
 import {
-    getAgama, getJenisIdentifiers, getKodeKlinis, getListDokter,
+    getAgama, getJenisIdentifiers, getJenisKualifikasi, getKodeKlinis, getListDokter,
     getPendidikan,
     getStatusPembiayaan,
     getStatusPerkawinan
@@ -14,6 +14,7 @@ universalRoutes.get('/pendidikan',authenticateToken, getPendidikan)
 universalRoutes.get('/status-perkawinan',authenticateToken, getStatusPerkawinan)
 universalRoutes.get('/status-pembiayaan',authenticateToken, getStatusPembiayaan)
 universalRoutes.get('/jenis-identifiers',authenticateToken, getJenisIdentifiers)
+universalRoutes.get('/jenis-kualifikasi',authenticateToken, getJenisKualifikasi)
 universalRoutes.get('/dokter', authenticateToken, getListDokter)
 universalRoutes.get('/kode-klinis', authenticateToken, getKodeKlinis)
 

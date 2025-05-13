@@ -209,9 +209,7 @@ export const mulaiPemeriksaan = async (req, res) => {
         });
 
         if (!dokter) {
-            return res.status(404).json({
-                error: "Data dokter tidak ditemukan",
-            });
+            return res.status(404).json({ error: "Data dokter tidak ditemukan" });
         }
 
         // 2. Cek kunjungan valid
@@ -221,12 +219,10 @@ export const mulaiPemeriksaan = async (req, res) => {
         });
 
         if (!kunjungan) {
-            return res.status(404).json({
-                error: "Kunjungan tidak ditemukan",
-            });
+            return res.status(404).json({ error: "Kunjungan tidak ditemukan" });
         }
 
-        // 3. Jika sudah ada rekam medis DRAFT, langsung return (Open Draft case)
+        // 3. Jika sudah ada rekam medis DRAFT, update status kunjungan lalu return
         const existingDraft = await prisma.rekamMedis.findFirst({
             where: {
                 kunjunganId,
@@ -235,6 +231,14 @@ export const mulaiPemeriksaan = async (req, res) => {
         });
 
         if (existingDraft) {
+            await prisma.kunjungan.update({
+                where: { id: kunjunganId },
+                data: {
+                    status: "DalamPemeriksaan",
+                    startAt: new Date(),
+                },
+            });
+
             return res.status(200).json({
                 message: "Draft pemeriksaan sudah ada",
                 data: {
@@ -244,7 +248,7 @@ export const mulaiPemeriksaan = async (req, res) => {
             });
         }
 
-        // 4. Tentukan versi berdasarkan UTAMA sebelumnya
+        // 4. Tentukan versi rekam medis
         let versi = "UTAMA";
 
         const existingUtama = await prisma.rekamMedis.findFirst({
@@ -256,7 +260,7 @@ export const mulaiPemeriksaan = async (req, res) => {
 
         if (existingUtama) {
             if (existingUtama.status === "FINAL") {
-                versi = "REVISI"; // atau FOLLOW_UP jika kamu pakai enum tsb
+                versi = "REVISI";
             } else {
                 return res.status(400).json({
                     error: "Kunjungan belum selesai. Tidak dapat membuat rekam medis baru",
@@ -264,7 +268,7 @@ export const mulaiPemeriksaan = async (req, res) => {
             }
         }
 
-        // 5. Buat rekam medis baru dengan status DRAFT
+        // 5. Buat rekam medis baru
         const rekamMedis = await prisma.rekamMedis.create({
             data: {
                 kunjunganId,
@@ -275,7 +279,7 @@ export const mulaiPemeriksaan = async (req, res) => {
             },
         });
 
-        // 6. Update status kunjungan jadi DalamPemeriksaan
+        // 6. Update status kunjungan
         await prisma.kunjungan.update({
             where: { id: kunjunganId },
             data: {
@@ -285,17 +289,16 @@ export const mulaiPemeriksaan = async (req, res) => {
         });
 
         return res.status(200).json({
-            message: "Pemeriksaan Dimulai",
+            message: "Pemeriksaan dimulai",
             data: {
                 id: rekamMedis.id,
                 ...rekamMedis,
             },
         });
+
     } catch (error) {
         console.error("[ERROR mulaiPemeriksaan]", error);
-        return res.status(500).json({
-            error: "Gagal memulai pemeriksaan",
-        });
+        return res.status(500).json({ error: "Gagal memulai pemeriksaan" });
     }
 };
 
@@ -789,52 +792,35 @@ export const getAssessmentNote = async(req, res) => {
     }
 }
 
-export const updatePlanningNote = async(req, res) => {
-    const {
-        id: rekamMedisId
-    } = req.params
-
-    const {
-        rencanaKlinis
-    } = req.body;
+export const updatePlanningNote = async (req, res) => {
+    const { id: rekamMedisId } = req.params;
+    const { rencanaKlinis } = req.body;
 
     try {
-
         const rekamMedis = await prisma.rekamMedis.findUnique({
-            where: {
-                id: rekamMedisId
-            },
-            include: {
-                planningNote: true,
-                kunjungan: true
-            }
-        })
+            where: { id: rekamMedisId },
+            include: { planningNote: true }
+        });
 
         if (!rekamMedis) {
-            return res.status(404).json({
-                error: "Rekam Medis tidak ditemukan"
-            })
+            return res.status(404).json({ error: "Rekam Medis tidak ditemukan" });
         }
 
         if (rekamMedis.status !== "DRAFT") {
-            return res.status(400).json({
-                error: "Rekam medis sudah final, tidak bisa diubah"
-            })
+            return res.status(400).json({ error: "Rekam medis sudah final, tidak bisa diubah" });
         }
 
         await prisma.$transaction(async (tx) => {
-            let planningNoteId
+            let planningNoteId;
 
             if (!rekamMedis.planningNote) {
                 const created = await tx.planningNote.create({
-                    data: {
-                        rekamMedisId
-                    }
+                    data: { rekamMedisId }
                 });
-                planningNoteId = created.id
+                planningNoteId = created.id;
             } else {
-                planningNoteId = rekamMedis.planningNote.id
-                await tx.rencanaKlinis.deleteMany({where : {planningNoteId}})
+                planningNoteId = rekamMedis.planningNote.id;
+                await tx.rencanaKlinis.deleteMany({ where: { planningNoteId } });
             }
 
             for (const r of rencanaKlinis) {
@@ -845,23 +831,23 @@ export const updatePlanningNote = async(req, res) => {
                         jenisRencana: r.jenisRencana,
                         jenisLayanan: r.jenisLayanan,
                         tanggalRencana: r.tanggalRencana ? new Date(r.tanggalRencana) : undefined,
-                        deskripsi : r.deskripsi
+                        deskripsi: r.deskripsi
                     }
-                })
+                });
 
                 if (r.jenisRencana === "Tindakan" && r.resepObat?.length > 0) {
                     await tx.resepObat.upsert({
-                        where: {rekamMedisId},
+                        where: { rekamMedisId },
                         update: {
                             itemObat: {
-                                deleteMany : {},
+                                deleteMany: {},
                                 createMany: {
                                     data: r.resepObat.map(item => ({
                                         obatId: item.obatId,
                                         frekuensi: item.frekuensi,
                                         durasi: item.durasi,
                                         aturan_pakai: item.aturan_pakai,
-                                        catatan: item.catatan  ?? ""
+                                        catatan: item.catatan ?? ""
                                     }))
                                 }
                             }
@@ -882,36 +868,17 @@ export const updatePlanningNote = async(req, res) => {
                                 }
                             }
                         }
-                    })
+                    });
                 }
-
-                if (r.jenisRencana === "Monitoring" && r.tanggalRencana) {
-                    await tx.kunjungan.create({
-                        data: {
-                            pasienId: rekamMedis.kunjungan.pasienId,
-                            tenagaMedisId: rekamMedis.tenagaMedisId,
-                            tanggal_kunjungan: new Date(r.tanggalRencana),
-                            alasanKunjungan: r.deskripsi ?? "Rencana Monitoring",
-                            status: "Menunggu"
-                        }
-                    })
-                }
-
             }
-        })
+        });
 
-
-        return res.status(200).json({
-            message: "Planning Note berhasil disimpan",
-        })
-
+        return res.status(200).json({ message: "Planning Note berhasil disimpan" });
     } catch (error) {
         console.error("[ERROR updatePlanningNote]", error);
-        return res.status(500).json({
-            error: "Gagal mengupdate planning note"
-        })
+        return res.status(500).json({ error: "Gagal mengupdate planning note" });
     }
-}
+};
 
 export const getPlanningNote = async(req, res) => {
     const {
@@ -1151,43 +1118,34 @@ export const akhiriPemeriksaan = async (req, res) => {
             include: { rencanaKlinis: true },
         });
 
-        // Filter rencana kontrol ulang / monitoring dengan tanggal
         const followUpRencana = planningNote?.rencanaKlinis.filter(
-            (r) =>
-                (r.jenisRencana === "Monitoring" || r.jenisRencana === "KontrolUlang") &&
-                r.tanggalRencana
+            (r) => r.jenisRencana === "Monitoring" && r.tanggalRencana
         );
 
         const rekamMedisIds = kunjungan.rekamMedis.map((r) => r.id);
 
         await prisma.$transaction([
-            // Finalisasi semua rekam medis
             prisma.rekamMedis.updateMany({
                 where: { id: { in: rekamMedisIds } },
                 data: { status: "FINAL" },
             }),
 
-            // Finalisasi resep obat yang masih DRAFT
             prisma.resepObat.updateMany({
                 where: {
                     rekamMedisId: { in: rekamMedisIds },
                     status: "DRAFT",
                 },
-                data: { status: "FINAL" },
+                data: { status: "DIPESAN" },
             }),
 
-            // Update status kunjungan
             prisma.kunjungan.update({
-                where: {
-                    id: kunjunganId,
-                },
+                where: { id: kunjunganId },
                 data: {
                     status: "Selesai",
                     endAt: new Date(),
                 },
             }),
 
-            // Buat kunjungan baru jika kontrol ulang/monitoring direncanakan
             ...((followUpRencana ?? []).map((r) =>
                 prisma.kunjungan.create({
                     data: {
@@ -1201,14 +1159,10 @@ export const akhiriPemeriksaan = async (req, res) => {
             )),
         ]);
 
-        return res.status(200).json({
-            message: "Pemeriksaan berhasil diakhiri. Rekam medis dan resep sudah final.",
-        });
+        return res.status(200).json({ message: "Pemeriksaan berhasil diakhiri" });
     } catch (error) {
         console.error("[ERROR akhiriPemeriksaan]", error);
-        return res.status(500).json({
-            error: "Gagal mengakhiri pemeriksaan",
-        });
+        return res.status(500).json({ error: "Gagal mengakhiri pemeriksaan" });
     }
 };
 
@@ -1517,6 +1471,145 @@ export const getObatList = async (req, res) => {
         console.error("[ERROR getObatList]", error);
         return res.status(500).json({
             error: "Gagal mengambil data obat"
+        })
+    }
+
+}
+
+export const getPasien = async (req, res) => {
+    const userId = req.user.userId;
+
+
+    try {
+        const dokter = await prisma.tenagaMedis.findUnique({
+            where : { userId }
+        })
+
+        if (!dokter) {
+            return res.status(404).json({
+                error: "Data dokter tidak ditemukan"
+            })
+        }
+
+        const pasienUnik = await prisma.kunjungan.findMany({
+            where: {
+                tenagaMedisId: dokter.id,
+                status: "Selesai"
+            },
+            distinct: ["pasienId"],
+            include: {
+                pasien: {
+                    select: {
+                        id: true,
+                        namaLengkap: true,
+                        fotoProfil: true,
+                        medicalRecordNumber: true
+                    }
+                }
+            }
+        })
+
+        const hasil = pasienUnik.map((p) => ({
+            id: p.pasien.id,
+            nama: p.pasien.namaLengkap,
+            mrn: p.pasien.medicalRecordNumber,
+            fotoProfil: p.pasien.fotoProfil
+        }))
+
+
+        return res.status(200).json(hasil)
+
+    } catch (error) {
+        console.error("[ERROR getPasien]", error);
+        return res.status(500).json({
+            error: "Gagal mengambil daftar pasien"
+        })
+    }
+
+}
+
+export const getDetailPasienDitangani = async (req, res) => {
+    const { id: pasienId } = req.params;
+
+    try {
+
+        const pasien = await prisma.pasien.findUnique({
+            where: {id: pasienId},
+            select: {
+                namaLengkap: true,
+                medicalRecordNumber: true,
+                tanggalLahir: true,
+                gender: true,
+                fotoProfil: true
+            }
+        })
+
+        if (!pasien) {
+            return res.status(404).json({ error: "Pasien tidak ditemukan" })
+        }
+
+        const rekamMedis = await prisma.rekamMedis.findMany({
+            where: {
+                status: "FINAL",
+                versi: "UTAMA",
+                kunjungan: {
+                    pasienId,
+                    status: "Selesai"
+                }
+            },
+            include: {
+                assessmentNote: {
+                    include: {
+                        diagnosisPasien: {
+                            where: {
+                                jenisDiagnosis: "Utama"
+                            },
+                            include: {
+                                kodeKlinis: {
+                                    select: {
+                                        Display: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                tenagaMedis: {
+                    include : {
+                        nama: {
+                            select: {
+                                namaLengkap: true
+                            }
+                        }
+                    }
+                },
+                kunjungan: {
+                    select: {
+                        tanggal_kunjungan: true
+                    }
+                }
+            },
+            orderBy: {
+                createdAt: "desc"
+            }
+        })
+
+        const rekamMedisMapped = rekamMedis.map((r) => ({
+            id: r.id,
+            diagnosis: r.assessmentNote?.diagnosisPasien[0]?.kodeKlinis?.Display ?? "-",
+            dokter: r.tenagaMedis.nama.namaLengkap ?? "-",
+            tanggal: r.kunjungan.tanggal_kunjungan ?? "-"
+        }))
+
+        return res.status(200).json({
+            pasien,
+            rekamMedis: rekamMedisMapped
+        })
+
+    } catch (error) {
+        console.error("[ERROR getDetailPasienDitangani]", error);
+        return res.status(500).json({
+            error: "Gagal mengambil detail pasien"
         })
     }
 

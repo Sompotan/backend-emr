@@ -4,9 +4,9 @@ import {authorizeRole} from "../middleware/authroizeRole.middleware.js";
 import {
     akhiriPemeriksaan,
     getAntrian, getAntrianById,
-    getAssessmentNote,
+    getAssessmentNote, getDetailPasienDitangani,
     getDokterProfile, getObatList,
-    getObjectiveNote, getPasienInfoByRekamMedisId,
+    getObjectiveNote, getPasien, getPasienInfoByRekamMedisId,
     getPlanningNote,
     getRekamMedisById, getRekamMedisByPatientId,
     getResepObat, getRiwayatKunjunganDokter,
@@ -188,6 +188,20 @@ dokterRoutes.get(
     authenticateToken,
     authorizeRole('dokter'),
     getObatList
+)
+
+dokterRoutes.get(
+    "/pasien",
+    authenticateToken,
+    authorizeRole('dokter'),
+    getPasien
+)
+
+dokterRoutes.get(
+    '/pasien/:id',
+    authenticateToken,
+    authorizeRole('dokter'),
+    getDetailPasienDitangani
 )
 
 

@@ -143,3 +143,23 @@ export const getKodeKlinis = async (req, res) => {
         })
     }
 }
+
+
+export const getJenisKualifikasi = async (req, res) => {
+    try {
+        const result = await prisma.jenisKualifikasi.findMany({
+            select: {
+                id: true,
+                namaJenisKualifikasi: true
+            },
+            orderBy: {
+                namaJenisKualifikasi: "asc"
+            }
+        });
+
+        res.status(200).json(result);
+    } catch (error) {
+        console.error("[ERROR getJenisKualifikasi]", error);
+        res.status(500).json({ error: "Gagal mengambil data jenis kualifikasi" });
+    }
+};
