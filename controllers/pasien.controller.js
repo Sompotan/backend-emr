@@ -44,8 +44,7 @@ export const ajukanVerifikasiData = async (req, res) => {
                 statusPerkawinanId: id_status_perkawinan,
                 statusPembiayaanId: id_status_pembiayaan,
                 pendidikanId: id_pendidikan,
-                agamaId: id_agama,
-                ihsNumber: null, // bisa di-generate nanti
+                agamaId: id_agama,// bisa di-generate nanti
                 medicalRecordNumber: null, // diisi saat verifikasi oleh admin
 
                 alamat: {

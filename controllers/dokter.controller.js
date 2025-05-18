@@ -928,6 +928,7 @@ export const getPlanningNote = async(req, res) => {
 
         const resepObat = rekamMedis.resepObat?.itemObat.map((item) => ({
             obatId: item.obatId,
+            namaObat: item.obat.namaObat,
             frekuensi: item.frekuensi,
             durasi: item.durasi,
             aturan_pakai: item.aturan_pakai,
