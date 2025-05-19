@@ -20,7 +20,6 @@ import {
     verifyPatient
 } from "../controllers/admin.controller.js";
 import {authorizeRole} from "../middleware/authroizeRole.middleware.js";
-import {updateResepObat} from "../controllers/dokter.controller.js";
 
 const adminRoutes = Router();
 

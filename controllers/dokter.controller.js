@@ -1167,17 +1167,24 @@ export const akhiriPemeriksaan = async (req, res) => {
     }
 };
 
-export const getRekamMedisByPatientId = async(req, res) => {
-    const { pasienId } = req.params
+export const getRekamMedisByPatientId = async (req, res) => {
+    const { id } = req.params;
+
+    console.log("[DEBUG] Received pasienId:", id, typeof id);
+
+    if (!id || typeof id !== "string") {
+        return res.status(400).json({ error: "ID pasien tidak valid." });
+    }
 
     try {
-
         const rekamMedis = await prisma.rekamMedis.findMany({
             where: {
                 status: "FINAL",
                 versi: "UTAMA",
                 kunjungan: {
-                    pasienId: pasienId
+                    is: {
+                        pasienId: id
+                    }
                 }
             },
             include: {
@@ -1203,27 +1210,24 @@ export const getRekamMedisByPatientId = async(req, res) => {
             orderBy: {
                 tanggal: "desc"
             }
-        })
+        });
 
-        const result = rekamMedis.map(rm => ({
+        const result = rekamMedis.map((rm) => ({
             id: rm.id,
             tanggal: rm.tanggal,
             pasien: rm.kunjungan.pasien.namaLengkap,
             dokter: rm.tenagaMedis.nama.namaLengkap,
             kunjunganId: rm.kunjunganId
-        }))
+        }));
 
-
-
-        return res.status(200).json(result)
-
+        return res.status(200).json(result);
     } catch (error) {
-        console.error("[ERROR getRekamMedis]", error);
-        return res.status(500).json({
-            error: "Gagal mengambil rekam medis"
-        })
+        console.error("[ERROR getRekamMedisByPatientId]", error);
+        return res.status(500).json({ error: "Gagal mengambil rekam medis." });
     }
-}
+};
+
+
 
 export const getRekamMedisById = async(req, res) => {
     const userId = req.user.userId

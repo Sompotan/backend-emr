@@ -30,7 +30,7 @@ pasienRoutes.get(
     authenticateToken,
     authorizeRole('pasien'),
     getPasienProfile
-)
+) // done
 
 pasienRoutes.post(
     '/verifikasi-email',

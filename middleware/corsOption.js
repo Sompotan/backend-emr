@@ -1,7 +1,7 @@
 const allowedOrigins = [
-    'http://192.168.1.9:3000',
+    'http://192.168.1.4:3000',
     'http://localhost:3000',
-    'exp://192.168.1.9:8081',
+    'exp://192.168.1.4:8081',
 ]
 
 export const corsOptions = {
