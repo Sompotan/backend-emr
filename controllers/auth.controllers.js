@@ -117,7 +117,7 @@ export const login = async (req, res) => {
 export const oauthSync = async (req, res) => {
     const {email, } = req.body;
 
-    if(!email || !supabaseId) {
+    if(!email) {
         return res.status(400).json({error: "Email dan Supabase ID wajib disediakan"});
     }
 
