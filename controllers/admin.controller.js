@@ -377,8 +377,8 @@ export const getDoctorById = async (req, res) => {
                     orderBy: {
                         tanggalMulai: 'desc' // optional: ambil yang paling baru
                     }
-                }
-            }
+                },
+            },
         });
 
         if (!doctor) {
@@ -393,6 +393,7 @@ export const getDoctorById = async (req, res) => {
             nomorHandphone: doctor.nomorHandphone,
             nik: doctor.identifier.find(i => i.jenisIdentifier?.namaJenisIdentifier === "NIK")?.nilaiIdentifier ?? "-",
             fotoProfil: doctor.fotoProfil ?? null,
+            jadwalPraktek: doctor.jadwalPraktekHari.map(hari => hari),
 
             kualifikasi: (() => {
                 const k = doctor.kualifikasi[0]; // ambil satu saja, misalnya STR
