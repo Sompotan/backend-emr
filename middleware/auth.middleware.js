@@ -20,6 +20,6 @@ export const authenticateToken = (req, res, next) => {
 
         next();
     } catch (error) {
-        return res.error(401).json({error: "Token tidak valid atau kedaluwarsa"});
+        return res.status(401).json({ error: "Token tidak valid atau kedaluwarsa" });
     }
 }
